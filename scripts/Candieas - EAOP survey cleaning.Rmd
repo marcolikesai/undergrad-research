@@ -1,0 +1,443 @@
+---
+title: "Candieas - Financial aid evaluation"
+author: "Travis Candieas"
+date: "2024-03-13"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(janitor)
+library(dplyr)
+library(visdat)
+library(psych)
+library(tidyr)
+```
+
+
+```{r}
+df_3_13_24_fin_aid <- read.csv("EAOP Financial Aid Evaluation_3_13_24.csv") %>%
+  clean_names() %>%
+  select(-1:-4, -6:-17, -contains("text"), -q2_3) %>%
+  mutate_all(~na_if(., "")) %>%
+  filter(q1_5 == "1" | q1_4 == "1")
+
+df_3_13_24_fin_aid %>%
+  vis_miss()
+```
+
+```{r}
+df_a_g <- read.csv("EAOP A-G Validation Evaluation_4_1_24.csv") %>%
+  clean_names() %>%
+  select(-1:-4, -6:-17, -contains("text"), -q2_3) %>%
+  mutate_all(~na_if(., "")) %>%
+  
+  filter(q1_4 == "1")
+
+vis_miss(df_a_g)
+```
+
+```{r}
+df_measures_a_g <- df_a_g %>%
+  select(-1:-12, -q3_7, -q3_8, -q4_1, -q4_4, -q4_5, -q4_6, -q5_4, -q5_5) %>%
+  mutate_all(~ as.numeric(.))
+
+df_assessment_a_g <- df_a_g %>%
+  select(1:12, q3_3, q3_7, q3_8, q4_1, q4_4, q4_5, q4_6, q5_4, q5_5)
+
+df_other_a_g <- read.csv("EAOP A-G Validation Evaluation_4_1_24.csv") %>%
+  clean_names() %>%
+  slice(-1:-2) %>%
+  mutate_all(~na_if(., "")) %>%
+  select(contains("text"))
+
+write.csv(df_measures_a_g, "Candieas - EAOP A-G Measures Survey_4_1_24.csv")
+write.csv(df_assessment_a_g, "Candieas - EAOP A-G Assessment Survey_4_1_24.csv")
+write.csv(df_other_a_g, "Candieas - EAOP A-G other responses Survey_4_1_24.csv")
+```
+
+```{r}
+df_measures <- df_3_13_24_fin_aid[-1, ] %>%
+  select(-1:-12, -q1_2, -q1_4,-q1_5,-q2_5, -q2_6,-q3_1, -q3_2, -q4_1, q4_4, -q4_5, -q4_6, -q5_4, -q5_5) %>%
+  mutate_all(~ as.numeric(.))
+
+df_assessment <- df_3_13_24_fin_aid[-1, ] %>%
+  select(1:12, -q1_2, -q1_4,-q1_5, q2_5, q2_6,q3_1, q3_2, q4_1, q4_4, q4_5, q4_6, q5_4, q5_5, -progress)
+
+df_other <- read.csv("EAOP Financial Aid Evaluation_3_13_24.csv") %>%
+  clean_names() %>%
+  slice(-1:-2) %>%
+  mutate_all(~na_if(., "")) %>%
+  select(contains("text"))
+
+write.csv(df_measures, "Candieas - EAOP Financial Aid Measures Survey_3_13_24.csv")
+write.csv(df_assessment, "Candieas - EAOP Financial Aid Assessment Survey_3_13_24.csv")
+write.csv(df_other, "Candieas - EAOP Financial Aid other responses Survey_3_13_24.csv")
+```
+
+```{r}
+#df_assessment_separated <- df_assessment %>%
+#  mutate(row_id = row_number()) %>%
+#  separate_rows(q2_5, sep = ",") %>%
+#  separate_rows(q2_6, sep = ",") %>%
+#  separate_rows(q3_1, sep = ",") %>%
+#  separate_rows(q3_2, sep = ",") %>%
+#  separate_rows(q4_1, sep = ",") %>%
+#  separate_rows(q4_4, sep = ",") %>%
+#  separate_rows(q4_5, sep = ",") %>%
+#  separate_rows(q4_6, sep = ",") %>%
+#  separate_rows(q5_4, sep = ",") %>%
+#  separate_rows(q5_5, sep = ",") %>%
+#  unique()
+```
+
+```{r}
+df_practice <- df_assessment_a_g %>%
+  select(q2_1, q2_5)%>%
+  drop_na(q2_5) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q2_5, sep = ",") %>%
+  mutate(q2_5 = case_when(
+    q2_5 == "1" ~ "California Community Colleges",
+    q2_5 == "2" ~ "California State University",
+    q2_5 == "3" ~ "University of California",
+    q2_5 == "4" ~ "Out of state college or university",
+    q2_5 == "5" ~ "Other",
+    TRUE ~ q2_5  # If none of the above conditions match, keep the original value
+  )) %>%
+  select(-row_id)
+
+table(df_practice)
+```
+
+```{r}
+df_santa_paula <- df_assessment_a_g %>%
+  filter(q2_1 == "3")
+```
+
+```{r}
+df_assessment_2_5_separated <- df_santa_paula %>%
+  drop_na(q2_5) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q2_5, sep = ",") %>%
+  select(row_id, q2_5,total_n) %>%
+  mutate(q2_5 = case_when(
+    q2_5 == "1" ~ "California Community Colleges",
+    q2_5 == "2" ~ "California State University",
+    q2_5 == "3" ~ "University of California",
+    q2_5 == "4" ~ "Out of state college or university",
+    q2_5 == "5" ~ "Other",
+    TRUE ~ q2_5  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q2_5 <- df_assessment_2_5_separated %>%
+  count(q2_5, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q2_5 <- df_count_q2_5 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q2_5, aes(x = reorder(q2_5, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Topics students want more advising about", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_2_6_separated <- df_santa_paula %>%
+  drop_na(q2_6) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q2_6, sep = ",") %>%
+  select(row_id, q2_6,total_n) %>%
+  mutate(q2_6 = case_when(
+    q2_6 == "1" ~ "Education",
+    q2_6 == "2" ~ "Computing and engineering",
+    q2_6 == "3" ~ "Health",
+    q2_6 == "4" ~ "Business and entrepreneurship",
+    q2_6 == "5" ~ "Other",
+    TRUE ~ q2_6  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q2_6 <- df_assessment_2_6_separated %>%
+  count(q2_6, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q2_6 <- df_count_q2_6 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q2_6, aes(x = reorder(q2_6, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Topics students want more advising about", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_3_1_separated <- df_assessment %>%
+  drop_na(q3_1) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q3_1, sep = ",") %>%
+  select(row_id, q3_1,total_n) %>%
+  mutate(q3_1 = case_when(
+    q3_1 == "1" ~ "Cost of attendance",
+    q3_1 == "2" ~ "Student aid index",
+    q3_1 == "3" ~ "Other financial assistance",
+    q3_1 == "4" ~ "Contributor",
+    q3_1 == "5" ~ "Grants",
+    q3_1 == "6" ~ "Loans",
+    q3_1 == "7" ~ "Other",
+    TRUE ~ q3_1  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q3_1 <- df_assessment_3_1_separated %>%
+  count(q3_1, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q3_1 <- df_count_q3_1 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q3_1, aes(x = reorder(q3_1, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Topics students want more advising about", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_3_2_separated <- df_santa_paula %>%
+  drop_na(q3_2) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q3_2, sep = ",") %>%
+  select(row_id, q3_2,total_n) %>%
+  mutate(q3_2 = case_when(
+    q3_2 == "1" ~ "Grants",
+    q3_2 == "2" ~ "Scholarships",
+    q3_2 == "3" ~ "Loans",
+    q3_2 == "4" ~ "Work study",
+    q3_2 == "5" ~ "Other",
+    TRUE ~ q3_2  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q3_2 <- df_assessment_3_2_separated %>%
+  count(q3_2, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q3_2 <- df_count_q3_2 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q3_2, aes(x = reorder(q3_2, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Student interest in college advising after applying to college", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+
+```
+
+```{r}
+df_assessment_4_4_separated <- df_assessment %>%
+  drop_na(q4_4) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q4_4, sep = ",") %>%
+  select(row_id, q4_4,total_n) %>%
+  mutate(q4_4 = case_when(
+    q4_4 == "1" ~ "Academic advising",
+    q4_4 == "2" ~ "Choosing a college",
+    q4_4 == "3" ~ "Understanding application requirments",
+    q4_4 == "4" ~ "Writing a personal response / essay",
+    q4_4 == "5" ~ "Choosing a major",
+    q4_4 == "6" ~ "Financial aid and scholarships",
+    q4_4 == "7" ~ "Other",
+    TRUE ~ q4_4  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q4_4 <- df_assessment_4_4_separated %>%
+  count(q4_4, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q4_4 <- df_count_q4_4 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q4_4, aes(x = reorder(q4_4, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Student interest in college advising after applying to college", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_4_5_separated <- df_assessment %>%
+  drop_na(q4_5) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q4_5, sep = ",") %>%
+  select(row_id, q4_5,total_n) %>%
+  mutate(q4_5 = case_when(
+    q4_5 == "1" ~ "Attending my college orientation",
+    q4_5 == "2" ~ "Reviewing my financial aid award letters",
+    q4_5 == "3" ~ "Understanding my residency requirments",
+    q4_5 == "4" ~ "Reviewing my housing options",
+    q4_5 == "5" ~ "Reviewing my registration",
+    q4_5 == "6" ~ "Other",
+    TRUE ~ q4_5  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q4_5 <- df_assessment_4_5_separated %>%
+  count(q4_5, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q4_5 <- df_count_q4_5 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q4_5, aes(x = reorder(q4_5, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Student interest in college advising after applying to college", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_4_6_separated <- df_assessment %>%
+  drop_na(q4_6) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q4_6, sep = ",") %>%
+  select(row_id, q4_6,total_n) %>%
+  mutate(q4_6 = case_when(
+    q4_6 == "1" ~ "A-G requirements",
+    q4_6 == "2" ~ "Personal insight questions/ personal statements",
+    q4_6 == "3" ~ "Financial aid (FAFSA, CalGrant, Pell Grant, etc.)",
+    q4_6 == "4" ~ "AP courses",
+    q4_6 == "5" ~ "Community college dual enrollment",
+    q4_6 == "6" ~ "Major exploration",
+    q4_6 == "7" ~ "Career pathway exploration",
+    q4_6 == "8" ~ "Other",
+    TRUE ~ q4_6  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q4_6 <- df_assessment_4_6_separated %>%
+  count(q4_6, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q4_6 <- df_count_q4_6 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q4_6, aes(x = reorder(q4_6, percent), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Topic", y = "Percentage of students", 
+       title = "Students interest in more information by topic", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(sprintf("%.1f", percent), "%")),  # Display percentage with one decimal place
+            position = position_stack(vjust = 1.0),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100))  # Set y-axis limits from 0 to 100%
+```
+
+```{r}
+df_assessment_5_5_separated <- df_assessment %>%
+  drop_na(q5_5) %>%
+  mutate(row_id = row_number(),
+         total_n = n_distinct(row_id)) %>%
+  separate_rows(q5_5, sep = ",") %>%
+  select(row_id, q5_5,total_n) %>%
+  mutate(q5_5 = case_when(
+    q5_5 == "1" ~ "Too much parental/ family support",
+    q5_5 == "2" ~ "Not enough parental/ family support",
+    q5_5 == "3" ~ "Too much information about higher education",
+    q5_5 == "4" ~ "Lack of information about higher education",
+    q5_5 == "5" ~ "Not knowing who to ask about higher education",
+    q5_5 == "6" ~ "Lack of awareness of resources at my school ",
+    q5_5 == "7" ~ "Paying for college",
+    q5_5 == "8" ~ "Home sickness or distance from home",
+    q5_5 == "9" ~ "Missing my community",
+    q5_5 == "10" ~ "First in my family to attend college",
+    q5_5 == "11" ~ "Low expectations for college/university",
+    q5_5 == "12" ~ "Other",
+    TRUE ~ q5_5  # If none of the above conditions match, keep the original value
+  ))
+
+df_count_q5_5 <- df_assessment_5_5_separated %>%
+  count(q5_5, total_n) %>%
+  mutate(proportion = n / total_n)
+
+library(ggplot2)
+
+df_count_q5_5 <- df_count_q5_5 %>%
+  mutate(percent = proportion * 100)  # Convert proportion to percentage
+
+ggplot(df_count_q5_5, aes(x = reorder(q5_5, n), y = percent)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() +
+  labs(x = "Barriers", y = "Percentage of students", 
+       title = "Barriers students listed as reasons discouraging them from attending higher education", 
+       subtitle = "Santa Paula High School") +
+  geom_text(aes(label = paste0(round(percent), "%")),  # Round percentage to whole number
+            position = position_stack(vjust = 1.15),
+            size = 3, color = "black", fontface = "bold") +
+  scale_y_continuous(limits = c(0, 100), labels = scales::percent_format(accuracy = 100))  # Set y-axis limits from 0 to 100% and add percentage labels
+```
+
+```{r}
+HS.model <- ' visual  =~ x1 + x2 + x3
+              textual =~ x4 + x5 + x6
+              speed   =~ x7 + x8 + x9 '
+
+fit <- cfa(HS.model, data = HolzingerSwineford1939)
+summary(fit, fit.measures = TRUE, standardized = TRUE)
+
+```
+
