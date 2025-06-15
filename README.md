@@ -10,9 +10,8 @@ Welcome to the data repository for our evaluation of the UCSB Early Academic Out
 
 ## 🏗 Project Structure
 
-- `data/` — Summarized/cleaned datasets (anonymized as needed).  
-- `notebooks/` — R Markdown and Jupyter notebooks: data cleaning, survey analysis, LDA topic modeling.
-- `scripts/` — R or Python scripts for reproducible analysis/visualization.
+- `data/` — Summarized/cleaned datasets 
+- `scripts/` — R scripts for reproducible analysis/visualization, data cleaning, survey analysis, and LDA topic modeling..
 - `reports/` — Final PDF reports and sample research poster.
 - `figures/` — Example plots and visualizations.
 
