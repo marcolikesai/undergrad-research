@@ -21,7 +21,6 @@ Welcome to the data repository for our evaluation of the UCSB Early Academic Out
 - **Python (Jupyter):** LDA topic modeling and additional EDA.
 - **Libraries:**  
   - R: `tidyverse`, `ggplot2`, `dplyr`, `tidyr`, `topicmodels`
-  - Python: `pandas`, `sklearn`, `gensim`, `matplotlib`, `seaborn`
 
 ##  Roles & Contributions
 
@@ -29,7 +28,7 @@ Welcome to the data repository for our evaluation of the UCSB Early Academic Out
   - Designed and cleaned survey datasets  
   - Led statistical analysis and visualization in R  
   - Co-authored evaluation reports  
-  - Performed topic modeling (LDA) in Python/Jupyter  
+  - Performed topic modeling (LDA) in R Markdown   
   - Created presentation visuals for stakeholders
 
 - **Collaborators:**  
