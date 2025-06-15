@@ -8,14 +8,14 @@ Welcome to the data repository for our evaluation of the UCSB Early Academic Out
 - **Schools Studied:** Channel Islands, Pacifica, Hueneme, Rio Mesa, Santa Paula.
 - **Methods:** R data cleaning, survey analysis, topic modeling (LDA), custom plotting, and report writing.
 
-## 🏗 Project Structure
+## Project Structure
 
 - `data/` — Summarized/cleaned datasets 
 - `scripts/` — R scripts for reproducible analysis/visualization, data cleaning, survey analysis, and LDA topic modeling..
 - `reports/` — Final PDF reports and sample research poster.
 - `figures/` — Example plots and visualizations.
 
-## ⚙ Technical Stack
+## Technical Stack
 
 - **R:** Data cleaning, survey analysis, and plotting (see `.Rmd` scripts).
 - **Python (Jupyter):** LDA topic modeling and additional EDA.
